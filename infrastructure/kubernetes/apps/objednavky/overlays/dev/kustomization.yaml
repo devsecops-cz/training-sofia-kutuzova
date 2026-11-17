@@ -5,3 +5,6 @@ namespace: objednavky-dev
 resources:
   - namespace.yaml
   - ../../base
+replicas:
+  - name: objednavky
+    count: 2
