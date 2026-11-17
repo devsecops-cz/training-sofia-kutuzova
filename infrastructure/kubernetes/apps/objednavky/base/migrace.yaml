@@ -1,0 +1,17 @@
+# Migration of the objednávky database: must finish before the new version of the service
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: objednavky-migrace
+  annotations:
+    argocd.argoproj.io/hook: PreSync                          # run before deployment
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation # delete the old Job before the next run
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrace
+          image: busybox:1.37.0
+          command: ["sh", "-c", "echo 'migrace schématu objednávek: verze 7'; sleep 5; echo hotovo"]
