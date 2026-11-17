@@ -7,4 +7,4 @@ resources:
   - ../../base
 replicas:
   - name: objednavky
-    count: 2
+    count: 3
