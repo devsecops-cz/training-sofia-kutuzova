@@ -1,0 +1,7 @@
+# A note for the team: dev is meant for testing
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: objednavky-poznamka
+data:
+  poznamka: "Dev slouží k testování, data se mažou."
