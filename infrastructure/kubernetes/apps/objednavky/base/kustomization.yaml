@@ -5,4 +5,3 @@ resources:
   - service.yaml
   - configmap.yaml
   - pdb.yaml
-  - poznamka.yaml
