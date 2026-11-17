@@ -14,4 +14,4 @@ spec:
       containers:
         - name: migrace
           image: busybox:1.37.0
-          command: ["sh", "-c", "echo 'migrace schématu objednávek: verze 7'; sleep 5; echo hotovo"]
+          command: ["sh", "-c", "echo 'migrace schématu objednávek: verze 8'; echo 'chyba: sloupec stav už existuje' >&2; exit 1"]
