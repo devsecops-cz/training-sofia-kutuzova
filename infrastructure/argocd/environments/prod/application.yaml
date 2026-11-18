@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: objednavky-prod
+  namespace: argocd                # Application žije u ArgoCD
+spec:
+  project: training
+  source:
+    repoURL: http://soft-serve.git.svc.cluster.local:23232/training.git
+    targetRevision: main           # větev, kterou ArgoCD sleduje
+    path: infrastructure/kubernetes/apps/objednavky/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc   # tenhle cluster
+    namespace: objednavky-prod
+  syncPolicy:
+    automated:
+      prune: true          # smaže z clusteru, co z Gitu zmizelo
+      selfHeal: true  

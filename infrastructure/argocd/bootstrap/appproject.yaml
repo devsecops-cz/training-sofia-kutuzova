@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: training
+  namespace: argocd
+spec:
+  description: Služba objednávky z repozitáře training
+  sourceRepos:
+    - http://soft-serve.git.svc.cluster.local:23232/training.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: objednavky-dev
+    - server: https://kubernetes.default.svc
+      namespace: objednavky-prod
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace        
