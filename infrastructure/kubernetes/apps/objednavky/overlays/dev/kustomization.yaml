@@ -8,4 +8,3 @@ resources:
 replicas:
   - name: objednavky
     count: 3
-  
