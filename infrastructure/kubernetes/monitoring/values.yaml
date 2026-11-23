@@ -1,0 +1,22 @@
+# kube-prometheus-stack pro cvičný cluster onb (modul 8).
+# Instaluje se s pevnou verzí chartu:
+#   helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
+#     --version 92.13.1 --namespace monitoring --create-namespace -f values.yaml
+prometheus:
+  prometheusSpec:
+    retention: 2d # TODO: data stačí na 2 dny (retention)
+    resources:
+      requests:
+        memory: 1Gi
+      limits: 
+        memory: 1Gi # TODO: limit paměti 1Gi
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+grafana:
+  enabled: false
+
