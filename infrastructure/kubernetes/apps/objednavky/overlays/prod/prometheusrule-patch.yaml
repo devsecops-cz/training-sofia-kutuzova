@@ -1,0 +1,38 @@
+# Pravidla objednávek pro prod: každý výraz jen nad namespace objednavky-prod,
+# alerty nesou label namespace, aby bylo vidět, které prostředí hoří.
+# Cesty: groups/0 = objednavky.zaznamy, groups/1 = objednavky.alerty; rules/N = pořadí v base.
+- op: replace
+  path: /spec/groups/0/rules/0/expr
+  value: sum by (namespace) (rate(http_requests_total{job="objednavky", namespace="objednavky-prod"}[5m]))
+- op: replace
+  path: /spec/groups/0/rules/1/expr
+  value: |
+    sum by (namespace) (rate(http_requests_total{job="objednavky", namespace="objednavky-prod", status=~"5.."}[5m]))
+      / sum by (namespace) (rate(http_requests_total{job="objednavky", namespace="objednavky-prod"}[5m]))
+- op: replace
+  path: /spec/groups/0/rules/2/expr
+  value: histogram_quantile(0.95, sum by (namespace, le) (rate(http_request_duration_seconds_bucket{job="objednavky", namespace="objednavky-prod"}[5m])))
+# ObjednavkyNedostupne
+- op: replace
+  path: /spec/groups/1/rules/0/expr
+  value: absent(up{job="objednavky", namespace="objednavky-prod"} == 1)
+- op: add
+  path: /spec/groups/1/rules/0/labels/namespace
+  value: objednavky-prod
+# ObjednavkyDochaziPamet
+- op: replace
+  path: /spec/groups/1/rules/1/expr
+  value: |
+    sum by (pod) (container_memory_working_set_bytes{namespace="objednavky-prod", container="objednavky"})
+      / sum by (pod) (kube_pod_container_resource_limits{namespace="objednavky-prod", container="objednavky", resource="memory"})
+      > 0.9
+- op: add
+  path: /spec/groups/1/rules/1/labels/namespace
+  value: objednavky-prod
+# ObjednavkyPomale
+- op: replace
+  path: /spec/groups/1/rules/2/expr
+  value: objednavky:latence:p95_5m{namespace="objednavky-prod"} > 0.5
+- op: add
+  path: /spec/groups/1/rules/2/labels/namespace
+  value: objednavky-prod
