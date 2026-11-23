@@ -1,0 +1,52 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: objednavky
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: objednavky.zaznamy
+      rules:
+        - record: objednavky:pozadavky:rate5m
+          expr: sum by (namespace) (rate(http_requests_total{job="objednavky", namespace="objednavky-dev"}[5m]))  
+        - record: objednavky:chybovost:ratio_rate5m
+          expr: |
+            sum by (namespace) (rate(http_requests_total{job="objednavky", namespace="objednavky-dev", status=~"5.."}[5m]))   
+              / sum by (namespace) (rate(http_requests_total{job="objednavky", namespace="objednavky-dev"}[5m]))   
+        - record: objednavky:latence:p95_5m
+          expr: histogram_quantile(0.95, sum by (namespace, le) (rate(http_request_duration_seconds_bucket{job="objednavky", namespace="objednavky-dev"}[5m])))   
+    - name: objednavky.alerty
+      rules:
+        - alert: ObjednavkyNedostupne
+          expr: absent(up{job="objednavky", namespace="objednavky-dev"} == 1)   
+          for: 1m
+          labels:
+            severity: critical
+            team: objednavky
+            namespace: objednavky-dev   
+          annotations:
+            summary: Objednávky neodpovídají
+            runbook_url: https://github.com/sofiakutuz/training-sofia-kutuzova/blob/main/docs/runbooks/objednavky.md#objednavkynedostupne
+        - alert: ObjednavkyDochaziPamet
+          expr: |
+            sum by (pod) (container_memory_working_set_bytes{namespace="objednavky-dev", container="objednavky"})   
+              / sum by (pod) (kube_pod_container_resource_limits{namespace="objednavky-dev", container="objednavky", resource="memory"})   
+              > 0.9
+          for: 5m
+          labels:
+            severity: warning
+            team: objednavky
+            namespace: objednavky-dev   
+          annotations:
+            summary: Pod {{ $labels.pod }} má přes 90 % limitu paměti
+        - alert: ObjednavkyPomale
+          expr: objednavky:latence:p95_5m{namespace="objednavky-dev"} > 0.5   
+          for: 2m
+          labels:
+            severity: critical
+            team: objednavky
+            namespace: objednavky-dev   
+          annotations:
+            summary: Nejpomalejších 5 % requestů objednávek trvá přes 0,5 s   
+            runbook_url: https://github.com/sofiakutuz/training-sofia-kutuzova/blob/main/docs/runbooks/objednavky.mdobjednavkypomale
