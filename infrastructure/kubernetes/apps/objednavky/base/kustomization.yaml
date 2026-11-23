@@ -6,5 +6,5 @@ resources:
   - configmap.yaml
   - pdb.yaml
   - migrace.yaml
-   - servicemonitor.yaml
+  - servicemonitor.yaml
   - prometheusrule.yaml
