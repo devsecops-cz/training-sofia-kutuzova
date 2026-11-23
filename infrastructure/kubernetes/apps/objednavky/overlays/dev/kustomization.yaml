@@ -5,6 +5,7 @@ namespace: objednavky-dev
 resources:
   - namespace.yaml
   - ../../base
+  - prometheusrule.yaml
 replicas:
   - name: objednavky
     count: 3
