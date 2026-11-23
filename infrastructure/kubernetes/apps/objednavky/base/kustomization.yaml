@@ -6,3 +6,8 @@ resources:
   - configmap.yaml
   - pdb.yaml
   - migrace.yaml
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+  - pdb.yaml
+  - migrace.yaml
