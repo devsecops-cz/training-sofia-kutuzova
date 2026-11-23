@@ -1,0 +1,14 @@
+# Co má Prometheus u objednávek sbírat. Doplň podle kroku.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: objednavky
+  labels: 
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: objednavky
+  endpoints: 
+    - port: http
+      interval: 15s
