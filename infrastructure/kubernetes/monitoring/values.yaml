@@ -4,12 +4,12 @@
 #     --version 92.13.1 --namespace monitoring --create-namespace -f values.yaml
 prometheus:
   prometheusSpec:
-    retention: 2d # TODO: data stačí na 2 dny (retention)
+    retention: 2d
     resources:
       requests:
+        memory: 400Mi
+      limits:
         memory: 1Gi
-      limits: 
-        memory: 1Gi # TODO: limit paměti 1Gi
 alertmanager:
   alertmanagerSpec:
     resources:
@@ -17,6 +17,22 @@ alertmanager:
         memory: 32Mi
       limits:
         memory: 128Mi
+  config:
+    route:
+      receiver: "null"
+      group_by: [namespace, alertname]
+      routes:
+        - receiver: "null"
+          matchers:
+            - alertname = "Watchdog"
+        - receiver: pager
+          matchers:
+            - team = "objednavky"
+    receivers:
+      - name: "null"
+      - name: pager
+        webhook_configs:
+          - url: http://pager.monitoring.svc:8080/
+            send_resolved: true
 grafana:
   enabled: false
-
