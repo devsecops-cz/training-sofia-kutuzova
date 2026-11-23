@@ -12,7 +12,7 @@ spec:
     - name: objednavky.zaznamy
       rules:
         - record: objednavky:pozadavky:rate5m
-          expr: sum by (namespace) (rate(http_requests_total{job="objednavky"}[5m]))
+          expr: rate(sum(http_requests_total{job="objednavky", namespace="objednavky-dev"}[5m]))
         - record: objednavky:chybovost:ratio_rate5m
           expr: |
             sum by (namespace) (rate(http_requests_total{job="objednavky", status=~"5.."}[5m]))
