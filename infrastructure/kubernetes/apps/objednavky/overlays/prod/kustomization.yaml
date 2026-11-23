@@ -10,3 +10,11 @@ replicas:
 images:
   - name: ghcr.io/stefanprodan/podinfo     
     newTag: 6.15.0
+configMapGenerator:
+  - name: objednavky-dashboard
+    files:
+      - dashboards/objednavky.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
