@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # promtool reads plain rule files (groups: …), not PrometheusRule objects, so take .spec.
+      # base = the file people edit; dev/prod = what ArgoCD deploys after the overlay patches.
+      - name: Extract rules and Alertmanager config
+        run: |
+          mkdir -p out
+          yq '.spec' infrastructure/kubernetes/apps/objednavky/base/prometheusrule.yaml > out/rules-base.yml
+          kubectl kustomize infrastructure/kubernetes/apps/objednavky/overlays/dev | yq 'select(.kind == "PrometheusRule") | .spec' > out/rules-dev.yml
+          kubectl kustomize infrastructure/kubernetes/apps/objednavky/overlays/prod | yq 'select(.kind == "PrometheusRule") | .spec' > out/rules-prod.yml
+          yq '.alertmanager.config' infrastructure/kubernetes/monitoring/values.yaml > out/alertmanager.yml
+          # An empty file would pass the checks below without checking anything
+          test -s out/rules-base.yml && test -s out/rules-dev.yml && test -s out/rules-prod.yml && test -s out/alertmanager.yml
+
+      # Same versions as the cluster: Prometheus v3.15.0, Alertmanager v0.34.1
+      - name: promtool check rules
+        run: docker run --rm -v "$PWD/out":/c -w /c --entrypoint "" quay.io/prometheus/prometheus:v3.15.0 promtool check rules rules-base.yml rules-dev.yml rules-prod.yml
+
+      - name: amtool check-config
+        run: docker run --rm -v "$PWD/out":/c -w /c --entrypoint "" quay.io/prometheus/alertmanager:v0.34.1 amtool check-config alertmanager.yml
+
+  ci-gate:
+    runs-on: ubuntu-latest
+    needs: [monitoring]
+    if: always()
+    steps:
+      - name: All required jobs passed
+        run: |
+          echo "monitoring: ${{ needs.monitoring.result }}"
+          test "${{ needs.monitoring.result }}" = "success"

@@ -7,3 +7,4 @@ resources:
   - pdb.yaml
   - migrace.yaml
   - servicemonitor.yaml
+  - prometheusrule.yaml
