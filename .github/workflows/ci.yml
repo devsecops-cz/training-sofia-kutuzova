@@ -30,13 +30,36 @@ jobs:
 
       - name: amtool check-config
         run: docker run --rm -v "$PWD/out":/c -w /c --entrypoint "" quay.io/prometheus/alertmanager:v0.34.1 amtool check-config alertmanager.yml
+  security:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0              # gitleaks čte celou historii, ne jen poslední commit
+          persist-credentials: false
+      - name: Secrety v celé historii
+        run: >-
+          docker run --rm -v "$PWD":/repo -w /repo
+          ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          git --no-banner --redact .
+      - name: Zranitelné závislosti a secrety v souborech
+        run: >-
+          docker run --rm -v "$PWD":/src -w /src
+          aquasec/trivy:0.76.0@sha256:2416d1f74045b57274df1a340eee6b510cacd73c66a6ccb8da092b117eb7d222
+          fs --quiet --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 .
 
   ci-gate:
     runs-on: ubuntu-latest
-    needs: [monitoring]
+    needs: [monitoring, security]
     if: always()
     steps:
       - name: All required jobs passed
         run: |
           echo "monitoring: ${{ needs.monitoring.result }}"
           test "${{ needs.monitoring.result }}" = "success"
+      - name: Security checks passed
+        run: |
+          echo "security: ${{ needs.security.result }}"
+          test "${{ needs.security.result }}" = "success"
