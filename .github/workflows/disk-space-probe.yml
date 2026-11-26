@@ -1,0 +1,47 @@
+# Throwaway probe: how much disk does removing preinstalled SDKs free on a GitHub-hosted ubuntu-24.04 runner, and how
+# long does it take? Context: platform-jobs build-scanner failed with "no space left on device" while Trivy exported the
+# prowler-based image. Runs only on a push to this branch; delete the branch afterwards.
+name: disk-space-probe
+
+on:
+  push:
+    branches: [test/disk-space-probe]
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Before
+        run: |
+          df -BG --output=target,size,used,avail / /tmp | tee "$RUNNER_TEMP/before.txt"
+          echo "--- size of each candidate"
+          for d in /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+                   /usr/local/share/boost /usr/share/swift /usr/local/share/powershell /usr/local/lib/node_modules; do
+            [ -e "$d" ] && sudo du -sh "$d" 2>/dev/null || echo "missing  $d"
+          done
+          echo "--- docker"
+          docker system df
+
+      - name: Remove preinstalled SDKs (timed)
+        run: |
+          start=$(date +%s)
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+                      /usr/local/share/boost /usr/share/swift /usr/local/share/powershell
+          docker image prune -af > /dev/null
+          echo "removal took $(( $(date +%s) - start ))s"
+
+      - name: After
+        run: |
+          echo "--- before"; cat "$RUNNER_TEMP/before.txt"
+          echo "--- after";  df -BG --output=target,size,used,avail / /tmp
+
+      # What the scanner image needs: platform-jobs' Dockerfile.scanner copies the whole prowler image (FROM scratch,
+      # COPY --from=prowler /), so its size is close to prowler's.
+      - name: Size of the prowler image the scanner is built from
+        run: |
+          docker pull -q prowlercloud/prowler:5.47.0@sha256:d8fcbd92aa0c3f9a012e6d69e6d62fead75b65cc373d6363527ee3463d7a147f
+          docker image inspect prowlercloud/prowler@sha256:d8fcbd92aa0c3f9a012e6d69e6d62fead75b65cc373d6363527ee3463d7a147f \
+            --format 'prowler image: {{.Size}} bytes' | awk '{printf "%s %.1f GiB\n", $1" "$2, $3/1073741824}'
+          df -BG --output=target,avail / | tail -1 | awk '{print "free after pull: " $2}'
